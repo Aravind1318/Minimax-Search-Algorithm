@@ -116,152 +116,99 @@ end
 <h2>PROGRAM</h2>
 
 ```
-def initialize_game(self):
-    self.current_state = [['.','.','.'],
-                          ['.','.','.'],
-                          ['.','.','.']]
-    self.player_turn = 'X'  # Player X always plays first
+import time
 
-def draw_board(self):
-    for i in range(3):
-        for j in range(3):
-            print('{}|'.format(self.current_state[i][j]), end=" ")
+
+class TicTacToe:
+    def __init__(self):
+        self.board = [['.' for _ in range(3)] for _ in range(3)]
+
+    def draw_board(self):
+        print('  X 0 1 2')
+        for y, row in enumerate(self.board):
+            print('{}   {}'.format(y, ' '.join(row)))
         print()
-    print()
 
-def is_valid(self, px, py):
-    if px < 0 or px > 2 or py < 0 or py > 2:
-        return False
-    elif self.current_state[px][py] != '.':
-        return False
-    else:
-        return True
+    def winner(self):
+        lines = self.board[:]
+        lines += [[self.board[y][x] for y in range(3)] for x in range(3)]
+        lines.append([self.board[i][i] for i in range(3)])
+        lines.append([self.board[i][2 - i] for i in range(3)])
 
-def is_end(self):
-    # Vertical win
-    for i in range(3):
-        if (self.current_state[0][i] != '.' and
-            self.current_state[0][i] == self.current_state[1][i] and
-            self.current_state[1][i] == self.current_state[2][i]):
-            return self.current_state[0][i]
+        for line in lines:
+            if line[0] != '.' and line[0] == line[1] == line[2]:
+                return line[0]
+        if all(cell != '.' for row in self.board for cell in row):
+            return 'tie'
+        return None
 
-    # Horizontal win
-    for i in range(3):
-        if (self.current_state[i] == ['X', 'X', 'X']):
-            return 'X'
-        elif (self.current_state[i] == ['O', 'O', 'O']):
-            return 'O'
+    def minimax(self, player):
+        result = self.winner()
+        if result == 'O':
+            return 1, None
+        if result == 'X':
+            return -1, None
+        if result == 'tie':
+            return 0, None
 
-    # Main diagonal win
-    if (self.current_state[0][0] != '.' and
-        self.current_state[0][0] == self.current_state[1][1] and
-        self.current_state[0][0] == self.current_state[2][2]):
-        return self.current_state[0][0]
+        best_score = -2 if player == 'O' else 2
+        best_move = None
+        for y in range(3):
+            for x in range(3):
+                if self.board[y][x] == '.':
+                    self.board[y][x] = player
+                    next_player = 'X' if player == 'O' else 'O'
+                    score, _ = self.minimax(next_player)
+                    self.board[y][x] = '.'
 
-    # Second diagonal win
-    if (self.current_state[0][2] != '.' and
-        self.current_state[0][2] == self.current_state[1][1] and
-        self.current_state[0][2] == self.current_state[2][0]):
-        return self.current_state[0][2]
+                    if ((player == 'O' and score > best_score) or
+                            (player == 'X' and score < best_score)):
+                        best_score = score
+                        best_move = (x, y)
+        return best_score, best_move
 
-    # Check for a tie
-    for i in range(3):
-        for j in range(3):
-            if self.current_state[i][j] == '.':
-                return None  # Game is still ongoing
-
-    return '.'  # It's a tie
-
-def max(self):
-    maxv = -2  # Initial worse case
-    px = None
-    py = None
-
-    result = self.is_end()
-    if result == 'X':
-        return (-1, 0, 0)
-    elif result == 'O':
-        return (1, 0, 0)
-    elif result == '.':
-        return (0, 0, 0)
-
-    for i in range(3):
-        for j in range(3):
-            if self.current_state[i][j] == '.':
-                self.current_state[i][j] = 'O'  # Simulate AI's move
-                (m, min_i, min_j) = self.min()  # Call min() to evaluate
-                if m > maxv:
-                    maxv = m
-                    px = i
-                    py = j
-                self.current_state[i][j] = '.'  # Undo the move
-
-    return (maxv, px, py)
-
-def min(self):
-    minv = 2  # Initial worse case
-    qx = None
-    qy = None
-
-    result = self.is_end()
-    if result == 'X':
-        return (-1, 0, 0)
-    elif result == 'O':
-        return (1, 0, 0)
-    elif result == '.':
-        return (0, 0, 0)
-
-    for i in range(3):
-        for j in range(3):
-            if self.current_state[i][j] == '.':
-                self.current_state[i][j] = 'X'  # Simulate player's move
-                (m, max_i, max_j) = self.max()  # Call max() to evaluate
-                if m < minv:
-                    minv = m
-                    qx = i
-                    qy = j
-                self.current_state[i][j] = '.'  # Undo the move
-
-    return (minv, qx, qy)
-
-def play(self):
-    while True:
-        self.draw_board()
-        self.result = self.is_end()
-
-        if self.result != None:
-            if self.result == 'X':
-                print('The winner is X!')
-            elif self.result == 'O':
-                print('The winner is O!')
-            elif self.result == '.':
-                print("It's a tie!")
-
-            self.initialize_game()
-            return
-
-        if self.player_turn == 'X':
-            while True:
-                start = time.time()
-                (m, qx, qy) = self.min()
-                end = time.time()
-                print('Evaluation time: {}s'.format(round(end - start, 7)))
-                print('Recommended move: X = {}, Y = {}'.format(qx, qy))
-
-                px = int(input('Insert the X coordinate: '))
-                py = int(input('Insert the Y coordinate: '))
-
-                if self.is_valid(px, py):
-                    self.current_state[px][py] = 'X'
-                    self.player_turn = 'O'
-                    break
+    def play(self):
+        while True:
+            self.draw_board()
+            result = self.winner()
+            if result:
+                if result == 'tie':
+                    print("It's a tie!")
                 else:
-                    print('The move is not valid! Try again.')
+                    print('The winner is {}!'.format(result))
+                return
 
-        else:
-            (m, px, py) = self.max()
-            self.current_state[px][py] = 'O'
-            self.player_turn = 'X'
+            if sum(cell != '.' for row in self.board for cell in row) % 2 == 0:
+                start = time.time()
+                _, move = self.minimax('X')
+                elapsed = time.time() - start
+                x, y = move
+                print('Evaluation time: {}s'.format(round(elapsed, 7)))
+                print('Recommended move: X = {}, Y = {}'.format(x, y))
+
+                try:
+                    x, y = map(int, input('Enter X and Y (0-2), separated by a space: ').split())
+                except EOFError:
+                    return
+                except ValueError:
+                    print('Enter two numbers, such as: 1 2')
+                    continue
+
+                if not (0 <= x <= 2 and 0 <= y <= 2):
+                    print('Coordinates must be between 0 and 2.')
+                    continue
+                if self.board[y][x] != '.':
+                    print('That square is already occupied.')
+                    continue
+                self.board[y][x] = 'X'
+            else:
+                _, (x, y) = self.minimax('O')
+                self.board[y][x] = 'O'
+
+
+if __name__ == '__main__':
+    TicTacToe().play()
+
 ```
 
 <h2>OUTPUT</h2>
